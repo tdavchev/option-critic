@@ -4,7 +4,7 @@ import tensorflow.contrib.slim as slim
 
 class OptionsNetwork(object):
     def __init__(self, sess, h_size, temp, state_dim, action_dim,
-                 option_dim, learning_rate, tau, entropy_reg=0.01, clip_delta=0):
+                 option_dim, learning_rate, tau, gamma, entropy_reg=0.01, clip_delta=0):
         self.sess = sess
         self.h_size = h_size
         self.s_dim = state_dim
@@ -130,7 +130,7 @@ class OptionsNetwork(object):
 
         y = tf.squeeze(self.reward, [1]) + \
             tf.squeeze((1 - self.done), [1]) * \
-            GAMMA * (
+            gamma * (
                 (1 - disc_option_term_prob) *
                 tf.reduce_sum(self.target_Q_out * self.options_onehot, [1]) +
                 disc_option_term_prob *
