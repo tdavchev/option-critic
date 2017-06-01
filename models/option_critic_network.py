@@ -56,23 +56,23 @@ class OptionsNetwork(object):
 
         # Op for periodically updating target network with online network
         # weights
-        self.update_target_network_params = \
-            [self.target_network_params[i].assign(self.network_params[i])
-             for i in range(len(self.target_network_params))]
         # self.update_target_network_params = \
-        #     [self.target_network_params[i].assign(
-        #         tf.multiply(self.network_params[i], self.tau) +
-        #         tf.multiply(self.target_network_params[i], 1. - self.tau))
+        #     [self.target_network_params[i].assign(self.network_params[i])
         #      for i in range(len(self.target_network_params))]
+        self.update_target_network_params = \
+            [self.target_network_params[i].assign(
+                tf.multiply(self.network_params[i], self.tau) +
+                tf.multiply(self.target_network_params[i], 1. - self.tau))
+             for i in range(len(self.target_network_params))]
 
-        self.update_target_q_params = \
-            [self.target_Q_params[i].assign(self.Q_params[i])
-             for i in range(len(self.target_Q_params))]
         # self.update_target_q_params = \
-        #     [self.target_Q_params[i].assign(
-        #         tf.multiply(self.Q_params[i], self.tau) +
-        #         tf.multiply(self.target_Q_params[i], 1. - self.tau))
+        #     [self.target_Q_params[i].assign(self.Q_params[i])
         #      for i in range(len(self.target_Q_params))]
+        self.update_target_q_params = \
+            [self.target_Q_params[i].assign(
+                tf.multiply(self.Q_params[i], self.tau) +
+                tf.multiply(self.target_Q_params[i], 1. - self.tau))
+             for i in range(len(self.target_Q_params))]
 
         # gather_nd should also do, though this is sexier
         self.option = tf.placeholder(tf.int32, [None, 1], name="option")
@@ -153,8 +153,9 @@ class OptionsNetwork(object):
         self.critic_cost = tf.reduce_sum(td_cost)
         critic_params = self.network_params + self.Q_params
         grads = tf.gradients(self.critic_cost, critic_params)
-        self.critic_updates = tf.train.RMSPropOptimizer(
-            self.learning_rate, decay=0.95, epsilon=0.01).apply_gradients(zip(grads, critic_params))
+        self.critic_updates = tf.train.AdamOptimizer().apply_gradients(zip(grads, critic_params))
+        # self.critic_updates = tf.train.RMSPropOptimizer(
+        #     self.learning_rate, decay=0.95, epsilon=0.01).apply_gradients(zip(grads, critic_params))
 
         # actor updates
         self.value = tf.stop_gradient(
@@ -172,8 +173,9 @@ class OptionsNetwork(object):
             self.option_term_prob * (self.disc_q - self.value))
         self.loss = self.term_gradient + policy_gradient
         grads = tf.gradients(self.loss, actor_params)
-        self.actor_updates = tf.train.RMSPropOptimizer(
-            self.learning_rate, decay=0.95, epsilon=0.01).apply_gradients(zip(grads, actor_params))
+        self.actor_updates = tf.train.AdamOptimizer().apply_gradients(zip(grads, actor_params))
+        # self.actor_updates = tf.train.RMSPropOptimizer(
+        #     self.learning_rate, decay=0.95, epsilon=0.01).apply_gradients(zip(grads, actor_params))
 
     def apply_state_model(self, input_image):
         with tf.variable_scope("input"):
